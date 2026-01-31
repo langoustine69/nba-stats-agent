@@ -204,12 +204,14 @@ addEntrypoint({
       statMap[s.abbreviation] = s.displayValue;
     });
     
-    const recentGames = data.gameLog?.events?.slice(0, 5).map((e: any) => ({
+    // gameLog.events is an object with game IDs as keys
+    const events = data.gameLog?.events || {};
+    const recentGames = Object.values(events).slice(0, 5).map((e: any) => ({
       date: e.gameDate,
       opponent: e.opponent?.displayName,
       result: e.gameResult,
       stats: e.stats,
-    })) || [];
+    }));
     
     return {
       output: {
