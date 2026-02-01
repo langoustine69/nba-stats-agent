@@ -74,18 +74,30 @@ const agent = await createAgent({
   .use(payments({ config: paymentsFromEnv() }))
   .build();
 
-const { app, addEntrypoint, runtime } = await createAgentApp(agent);
-
-// Override agent.json to add required 'type' field for ERC-8004 compliance
-app.get('/.well-known/agent.json', async (c) => {
-  const res = await runtime.handlers.manifest(c.req.raw);
-  const manifest = await res.json();
-  return c.json({
-    ...manifest,
-    '@context': 'https://schema.org',
-    '@type': 'SoftwareAgent',
-    type: 'Agent',
-  });
+const { app, addEntrypoint, runtime } = await createAgentApp(agent, {
+  beforeMount: (honoApp) => {
+    // Middleware to add type fields to agent.json for ERC-8004 compliance
+    honoApp.use('/.well-known/agent.json', async (c, next) => {
+      await next();
+      // Clone and modify the response
+      const originalBody = await c.res.text();
+      try {
+        const manifest = JSON.parse(originalBody);
+        const enhanced = {
+          '@context': 'https://schema.org',
+          '@type': 'SoftwareAgent',
+          type: 'Agent',
+          ...manifest,
+        };
+        c.res = new Response(JSON.stringify(enhanced, null, 2), {
+          status: c.res.status,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      } catch {
+        // Not JSON, leave as-is
+      }
+    });
+  },
 });
 
 // === FREE: Overview ===
