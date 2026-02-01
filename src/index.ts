@@ -74,7 +74,19 @@ const agent = await createAgent({
   .use(payments({ config: paymentsFromEnv() }))
   .build();
 
-const { app, addEntrypoint } = await createAgentApp(agent);
+const { app, addEntrypoint, runtime } = await createAgentApp(agent);
+
+// Override agent.json to add required 'type' field for ERC-8004 compliance
+app.get('/.well-known/agent.json', async (c) => {
+  const res = await runtime.handlers.manifest(c.req.raw);
+  const manifest = await res.json();
+  return c.json({
+    ...manifest,
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareAgent',
+    type: 'Agent',
+  });
+});
 
 // === FREE: Overview ===
 addEntrypoint({
