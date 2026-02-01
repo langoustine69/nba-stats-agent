@@ -2,7 +2,16 @@ import { createAgent } from '@lucid-agents/core';
 import { http } from '@lucid-agents/http';
 import { createAgentApp } from '@lucid-agents/hono';
 import { payments, paymentsFromEnv } from '@lucid-agents/payments';
+import { createAgentIdentity, generateAgentRegistration } from '@lucid-agents/identity';
 import { z } from 'zod';
+
+// Initialize identity (auto-registers if PRIVATE_KEY and REGISTER_IDENTITY=true)
+const identity = process.env.PRIVATE_KEY ? await createAgentIdentity({
+  autoRegister: process.env.REGISTER_IDENTITY === 'true',
+}).catch(e => {
+  console.log('[identity] Skipping:', e.message);
+  return null;
+}) : null;
 
 const ESPN_BASE = 'https://site.api.espn.com/apis/site/v2/sports/basketball/nba';
 const ESPN_V3 = 'https://site.api.espn.com/apis/common/v3/sports/basketball/nba';
